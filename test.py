@@ -1,5 +1,6 @@
 from flask import Flask, request, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit
 
 app = Flask("ChatApp")
 app.secret_key = "chatapp-secret-key"
@@ -8,6 +9,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///chat.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
+socketio = SocketIO(app)
 
 
 class Message(db.Model):
@@ -73,6 +75,8 @@ def home():
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>ChatApp</title>
+
+        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     </head>
 
     <body style="
@@ -91,14 +95,14 @@ def home():
             <div>Salom, {username}!</div>
         </div>
 
-        <div style="
+        <div id="messages" style="
             padding: 15px;
             padding-bottom: 80px;
         ">
             {xabarlar_html}
         </div>
 
-        <form action="/send" method="post" style="
+        <form id="messageForm" style="
             position: fixed;
             bottom: 0;
             width: 100%;
@@ -106,7 +110,7 @@ def home():
             padding: 10px;
             box-sizing: border-box;
         ">
-            <input name="message"
+            <input id="messageInput"
                    placeholder="Xabar yozing..."
                    style="
                        width: 75%;
@@ -121,6 +125,45 @@ def home():
                 Yuborish
             </button>
         </form>
+
+        <script>
+            const socket = io();
+
+            const form = document.getElementById("messageForm");
+            const input = document.getElementById("messageInput");
+            const messages = document.getElementById("messages");
+
+            form.addEventListener("submit", function(event) {
+                event.preventDefault();
+
+                const text = input.value.trim();
+
+                if (text) {
+                    socket.emit("send_message", {
+                        text: text
+                    });
+
+                    input.value = "";
+                }
+            });
+
+            socket.on("new_message", function(data) {
+                const message = document.createElement("div");
+
+                message.style.background = "white";
+                message.style.padding = "10px";
+                message.style.margin = "8px 0";
+[9/13/2026 3:09 PM] Nizomov: message.style.borderRadius = "10px";
+
+                message.innerHTML =
+                    "<b>👤 " + data.username + "</b><br>" +
+                    data.text;
+
+                messages.appendChild(message);
+
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+        </script>
 
     </body>
     </html>
@@ -137,21 +180,29 @@ def login():
     return home()
 
 
-@app.route("/send", methods=["POST"])
-def send():
+@socketio.on("send_message")
+def handle_message(data):
     username = session.get("username")
-    message = request.form.get("message")
+    text = data.get("text")
 
-    if username and message:
+    if username and text:
         yangi_xabar = Message(
             username=username,
-            text=message
+            text=text
         )
 
         db.session.add(yangi_xabar)
         db.session.commit()
 
-    return home()
+        emit(
+            "new_message",
+            {
+                "username": username,
+                "text": text
+            },
+            broadcast=True
+        )
 
 
-app.run(host="0.0.0.0", port=5000)
+if name == "main":
+    socketio.run(app, host="0.0.0.0", port=5000)
