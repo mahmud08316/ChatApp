@@ -51,7 +51,6 @@ def home():
         """
 
     messages = Message.query.all()
-
     xabarlar_html = ""
 
     for message in messages:
@@ -133,27 +132,27 @@ def home():
             const input = document.getElementById("messageInput");
             const messages = document.getElementById("messages");
 
-            form.addEventListener("submit", function(event) {
+            form.addEventListener("submit", function(event) {{
                 event.preventDefault();
 
                 const text = input.value.trim();
 
-                if (text) {
-                    socket.emit("send_message", {
+                if (text) {{
+                    socket.emit("send_message", {{
                         text: text
-                    });
+                    }});
 
                     input.value = "";
-                }
-            });
+                }}
+            }});
 
-            socket.on("new_message", function(data) {
+            socket.on("new_message", function(data) {{
                 const message = document.createElement("div");
 
                 message.style.background = "white";
                 message.style.padding = "10px";
                 message.style.margin = "8px 0";
-[9/13/2026 3:09 PM] Nizomov: message.style.borderRadius = "10px";
+[9/13/2026 5:42 PM] Nizomov: message.style.borderRadius = "10px";
 
                 message.innerHTML =
                     "<b>👤 " + data.username + "</b><br>" +
@@ -162,7 +161,7 @@ def home():
                 messages.appendChild(message);
 
                 window.scrollTo(0, document.body.scrollHeight);
-            });
+            }});
         </script>
 
     </body>
