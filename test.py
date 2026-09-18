@@ -1,4 +1,4 @@
-from flask import Flask, request, session
+from flask import Flask, request, session, redirect
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -28,61 +28,196 @@ with app.app_context():
     db.create_all()
 
 
+STYLE = """
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #e9f1f7;
+    color: #222;
+}
+
+.container {
+    max-width: 500px;
+    margin: 40px auto;
+    background: white;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.header {
+    background: #229ed9;
+    color: white;
+    padding: 20px;
+    font-size: 23px;
+    font-weight: bold;
+}
+
+.content {
+    padding: 20px;
+}
+
+input {
+    width: 100%;
+    padding: 13px;
+    margin: 7px 0;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 15px;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 10px;
+    background: #229ed9;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #168ac0;
+}
+
+.user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px;
+    margin: 8px 0;
+    background: #f1f5f8;
+    border-radius: 12px;
+}
+
+.user a {
+    text-decoration: none;
+    color: white;
+    background: #229ed9;
+    padding: 8px 13px;
+    border-radius: 9px;
+}
+
+.message {
+    padding: 10px 13px;
+    margin: 8px 0;
+    border-radius: 12px;
+    background: #f1f5f8;
+}
+
+.me {
+    background: #d8f4ff;
+    text-align: right;
+}
+
+.small {
+    text-align: center;
+    color: #777;
+    margin-top: 15px;
+}
+
+.small a {
+    color: #229ed9;
+    text-decoration: none;
+}
+</style>
+"""
+
+
 @app.route("/")
 def home():
     username = session.get("username")
 
     if not username:
-        return """
-        <h1>ChatApp 💬</h1>
+        return STYLE + """
+        <div class="container">
+            <div class="header">💬 ChatApp</div>
 
-        <h2>Login</h2>
+            <div class="content">
+                <h2>Kirish</h2>
 
-        <form action="/login" method="post">
-            <input name="username" placeholder="Username" required>
-            <br><br>
-            <input name="password" type="password" placeholder="Password" required>
-            <br><br>
-            <button type="submit">Kirish</button>
-        </form>
+                <form action="/login" method="post">
+                    <input name="username"
+                           placeholder="Username"
+                           required>
 
-        <hr>
+                    <input name="password"
+                           type="password"
+                           placeholder="Password"
+                           required>
 
-        <h2>Register</h2>
+                    <button type="submit">
+                        Kirish
+                    </button>
+                </form>
 
-        <form action="/register" method="post">
-            <input name="username" placeholder="Username" required>
-            <br><br>
-            <input name="password" type="password" placeholder="Password" required>
-            <br><br>
-            <button type="submit">Register</button>
-        </form>
+                <hr>
+
+                <h2>Ro‘yxatdan o‘tish</h2>
+
+                <form action="/register" method="post">
+                    <input name="username"
+                           placeholder="Username"
+                           required>
+
+                    <input name="password"
+                           type="password"
+                           placeholder="Password"
+                           required>
+
+                    <button type="submit">
+                        Register
+                    </button>
+                </form>
+            </div>
+        </div>
         """
 
-    users = User.query.filter(User.username != username).all()
+    users = User.query.filter(
+        User.username != username
+    ).all()
 
-    users_html = "<h2>Foydalanuvchilar 👥</h2>"
+    users_html = ""
 
     for user in users:
         users_html += f"""
-        <p>
-            👤 <b>{user.username}</b>
-            <a href="/chat/{user.username}">Yozish</a>
-        </p>
+        <div class="user">
+            <span>👤 <b>{user.username}</b></span>
+            <a href="/chat/{user.username}">
+                Chat
+            </a>
+        </div>
         """
+[9/18/2026 4:44 PM] Nizomov: return STYLE + f"""
+    <div class="container">
+        <div class="header">
+            💬 ChatApp
+        </div>
 
-    return f"""
-    <h1>ChatApp 💬</h1>
+        <div class="content">
 
-    <p>Salom, <b>{username}</b>!</p>
+            <h3>Salom, {username}! 👋</h3>
 
-    {users_html}
+            <h2>Foydalanuvchilar 👥</h2>
 
-    <br>
+            {users_html if users_html else
+            "<p>Hozircha boshqa foydalanuvchi yo‘q.</p>"}
 
-    <form action="/logout" method="post">
-        <button type="submit">Chiqish</button>
-    </form>
+            <form action="/logout" method="post">
+                <button type="submit">
+                    Chiqish
+                </button>
+            </form>
+
+        </div>
+    </div>
     """
 
 
@@ -92,12 +227,18 @@ def register():
     password = request.form.get("password")
 
     if not username or not password:
-        return "Username va password kiriting."
+        return "Ma'lumotlarni to‘liq kiriting."
 
-    existing_user = User.query.filter_by(username=username).first()
+    existing_user = User.query.filter_by(
+        username=username
+    ).first()
 
     if existing_user:
-        return "Bu username band. <a href='/'>Orqaga</a>"
+        return """
+        Bu username band.
+        <br><br>
+        <a href="/">Orqaga</a>
+        """
 
     new_user = User(
         username=username,
@@ -107,7 +248,10 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    return "Register muvaffaqiyatli! <a href='/'>Login qilish</a>"
+    return """
+    <h2>✅ Register muvaffaqiyatli!</h2>
+    <a href="/">Login qilish</a>
+    """
 
 
 @app.route("/login", methods=["POST"])
@@ -115,13 +259,21 @@ def login():
     username = request.form.get("username")
     password = request.form.get("password")
 
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(
+        username=username
+    ).first()
 
-    if user and check_password_hash(user.password, password):
+    if user and check_password_hash(
+        user.password,
+        password
+    ):
         session["username"] = user.username
-        return home()
+        return redirect("/")
 
-    return "Username yoki password noto‘g‘ri. <a href='/'>Orqaga</a>"
+    return """
+    <h2>❌ Username yoki password noto‘g‘ri.</h2>
+    <a href="/">Orqaga</a>
+    """
 
 
 @app.route("/chat/<receiver>")
@@ -129,70 +281,112 @@ def chat(receiver):
     username = session.get("username")
 
     if not username:
-        return "Avval login qiling. <a href='/'>Login</a>"
+        return redirect("/")
 
-    user = User.query.filter_by(username=receiver).first()
+    user = User.query.filter_by(
+        username=receiver
+    ).first()
 
     if not user:
-        return "Bunday foydalanuvchi topilmadi."
+        return "Foydalanuvchi topilmadi."
 
     messages = Message.query.filter(
-        ((Message.sender == username) & (Message.receiver == receiver)) |
-        ((Message.sender == receiver) & (Message.receiver == username))
+        (
+            (Message.sender == username) &
+            (Message.receiver == receiver)
+        ) |
+        (
+            (Message.sender == receiver) &
+            (Message.receiver == username)
+        )
     ).all()
 
     messages_html = ""
 
     for message in messages:
-        messages_html += f"""
-        <p>
-            <b>{message.sender}:</b> {message.text}
-        </p>
-        """
 
-    return f"""
-    <h1>💬 {receiver} bilan chat</h1>
+        if message.sender == username:
+            messages_html += f"""
+            <div class="message me">
+                <b>Siz</b><br>
+                {message.text}
+            </div>
+            """
+        else:
+            messages_html += f"""
+            <div class="message">
+                <b>{message.sender}</b><br>
+                {message.text}
+            </div>
+            """
 
-    <a href="/">⬅️ Foydalanuvchilar</a>
+    return STYLE + f"""
+    <div class="container">
 
-    <hr>
+        <div class="header">
+            💬 {receiver}
+        </div>
 
-    {messages_html}
+        <div class="content">
 
-    <form action="/send/{receiver}" method="post">
-        <input name="message" placeholder="Xabar yozin
-[9/18/2026 4:33 PM] Nizomov: g" required>
-        <button type="submit">Yuborish</button>
-    </form>
+            <p>
+                <a href="/">⬅️ Orqaga</a>
+            </p>
+
+            <hr>
+
+            {messages_html if messages_html else
+            "<p class='small'>Hali xabar yo‘q.</p>"}
+
+            <form action="/send/{receiver}" method="post">
+
+                <input
+                    name="message"
+                    placeholder="Xabar yozing..."
+                    required
+                >
+
+                <button type="submit">
+                    Yuborish ➤
+                </button>
+
+            </form>
+
+        </div>
+    </div>
     """
 
 
 @app.route("/send/<receiver>", methods=["POST"])
 def send(receiver):
     username = session.get("username")
-    message_text = request.form.get("message")
 
     if not username:
-        return "Avval login qiling."
+        return redirect("/")
 
-    if message_text:
+    text = request.form.get("message")
+
+    if text:
         message = Message(
             sender=username,
             receiver=receiver,
-            text=message_text
+            text=text
         )
 
         db.session.add(message)
         db.session.commit()
 
-    return chat(receiver)
+    return redirect(f"/chat/{receiver}")
 
 
 @app.route("/logout", methods=["POST"])
 def logout():
     session.pop("username", None)
-    return home()
+    return redirect("/")
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
