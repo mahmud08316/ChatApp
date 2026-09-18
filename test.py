@@ -2,7 +2,6 @@ from flask import Flask, request, session
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask("ChatApp")
-
 app.secret_key = "chatapp-secret-key"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///chat.db"
@@ -23,150 +22,49 @@ with app.app_context():
 
 @app.route("/")
 def home():
-
     username = session.get("username")
 
     if not username:
         return """
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>ChatApp</title>
-        </head>
+        <h1>ChatApp 💬</h1>
 
-        <body style="font-family:Arial; text-align:center; padding:40px;">
-
-            <h1>💬 ChatApp</h1>
-
-            <form action="/login" method="post">
-
-                <input
-                    name="username"
-                    placeholder="Ismingiz"
-                    style="padding:12px; font-size:16px;"
-                >
-
-                <br><br>
-
-                <button
-                    style="padding:12px 25px; font-size:16px;"
-                >
-                    Kirish
-                </button>
-
-            </form>
-
-        </body>
-        </html>
+        <form action="/login" method="post">
+            <input name="username" placeholder="Ismingiz">
+            <button type="submit">Kirish</button>
+        </form>
         """
 
     messages = Message.query.all()
 
-    xabarlar = ""
+    xabarlar_html = ""
 
     for message in messages:
-        xabarlar += f"""
-        <div style="
-            background:white;
-            padding:12px;
-            margin:8px 0;
-            border-radius:10px;
-        ">
-
-            <b>👤 {message.username}</b>
-
-            <br>
-
-            {message.text}
-
-        </div>
+        xabarlar_html += f"""
+        <p>💬 <b>{message.username}:</b> {message.text}</p>
         """
 
     return f"""
-    <html>
+    <h1>ChatApp 💬</h1>
 
-    <head>
+    <p>Salom, {username}!</p>
 
-        <meta name="viewport"
-              content="width=device-width, initial-scale=1">
+    {xabarlar_html}
 
-        <title>ChatApp</title>
+    <form action="/send" method="post">
+        <input name="message" placeholder="Xabar yozing">
+        <button type="submit">Yuborish</button>
+    </form>
 
-    </head>
+    <br>
 
-    <body style="
-        margin:0;
-        font-family:Arial;
-        background:#eeeeee;
-    ">
-
-        <div style="
-            background:#333;
-            color:white;
-            padding:20px;
-            text-align:center;
-        ">
-
-            <h2>💬 ChatApp</h2>
-
-            <div>Salom, {username}!</div>
-
-        </div>
-
-
-        <div style="
-            padding:15px;
-            padding-bottom:100px;
-        ">
-
-            {xabarlar}
-
-        </div>
-
-
-        <form
-            action="/send"
-            method="post"
-            style="
-                position:fixed;
-                bottom:0;
-                width:100%;
-                background:white;
-                padding:10px;
-                box-sizing:border-box;
-            "
-        >
-
-            <input
-                name="message"
-                placeholder="Xabar yozing..."
-                style="
-                    width:75%;
-                    padding:12px;
-                    box-sizing:border-box;
-                "
-            >
-
-            <button
-                style="
-                    width:23%;
-                    padding:12px;
-                "
-            >
-                Yuborish
-            </button>
-
-        </form>
-
-    </body>
-
-    </html>
+    <form action="/logout" method="post">
+        <button type="submit">Chiqish</button>
+    </form>
     """
 
 
 @app.route("/login", methods=["POST"])
 def login():
-
     username = request.form.get("username")
 
     if username:
@@ -177,25 +75,26 @@ def login():
 
 @app.route("/send", methods=["POST"])
 def send():
-
     username = session.get("username")
-    text = request.form.get("message")
+    message = request.form.get("message")
 
-    if username and text:
-
-        message = Message(
+    if username and message:
+        yangi_xabar = Message(
             username=username,
-            text=text
+            text=message
         )
 
-        db.session.add(message)
+        db.session.add(yangi_xabar)
         db.session.commit()
 
     return home()
 
 
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000
-    )
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.pop("username", None)
+    return home()
+
+
+if name == "main":
+    app.run(host="0.0.0.0", port=5000)
