@@ -11,33 +11,22 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
-# =========================
-# USER MODEL
-# =========================
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
 
-
-# =========================
-# MESSAGE MODEL
-# =========================
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), nullable=False)
+    sender = db.Column(db.String(50), nullable=False)
+    receiver = db.Column(db.String(50), nullable=False)
     text = db.Column(db.String(500), nullable=False)
 
 
 with app.app_context():
     db.create_all()
 
-
-# =========================
-# HOME
-# =========================
 
 @app.route("/")
 def home():
@@ -52,220 +41,158 @@ def home():
         <form action="/login" method="post">
             <input name="username" placeholder="Username" required>
             <br><br>
-            <input type="password" name="password" placeholder="Parol" required>
+            <input name="password" type="password" placeholder="Password" required>
             <br><br>
             <button type="submit">Kirish</button>
         </form>
 
-        <br>
+        <hr>
 
-        <a href="/register">
-            Ro'yxatdan o'tish
-        </a>
+        <h2>Register</h2>
+
+        <form action="/register" method="post">
+            <input name="username" placeholder="Username" required>
+            <br><br>
+            <input name="password" type="password" placeholder="Password" required>
+            <br><br>
+            <button type="submit">Register</button>
+        </form>
         """
 
-    messages = Message.query.all()
+    users = User.query.filter(User.username != username).all()
 
-    xabarlar_html = ""
+    users_html = "<h2>Foydalanuvchilar 👥</h2>"
 
-    for message in messages:
-        xabarlar_html += f"""
+    for user in users:
+        users_html += f"""
         <p>
-            💬 <b>{message.username}:</b> {message.text}
+            👤 <b>{user.username}</b>
+            <a href="/chat/{user.username}">Yozish</a>
         </p>
         """
 
     return f"""
     <h1>ChatApp 💬</h1>
 
-    <p>Salom, <b>{username}</b>! 👋</p>
+    <p>Salom, <b>{username}</b>!</p>
 
-    <hr>
-
-    {xabarlar_html}
-
-    <hr>
-
-    <form action="/send" method="post">
-        <input
-            name="message"
-            placeholder="Xabar yozing"
-            required
-        >
-        <button type="submit">Yuborish</button>
-    </form>
+    {users_html}
 
     <br>
 
     <form action="/logout" method="post">
-        <button type="submit">Chiqish 🚪</button>
+        <button type="submit">Chiqish</button>
     </form>
     """
 
-
-# =========================
-# REGISTER PAGE
-# =========================
-
-@app.route("/register")
-def register_page():
-    return """
-    <h1>ChatApp 💬</h1>
-
-    <h2>Ro'yxatdan o'tish</h2>
-
-    <form action="/register" method="post">
-
-        <input
-            name="username"
-            placeholder="Username"
-            required
-        >
-
-        <br><br>
-
-        <input
-            type="password"
-            name="password"
-            placeholder="Parol"
-            required
-        >
-
-        <br><br>
-
-        <button type="submit">
-            Ro'yxatdan o'tish
-        </button>
-
-    </form>
-
-    <br>
-
-    <a href="/">
-        Login sahifasiga qaytish
-    </a>
-    """
-
-
-# =========================
-# REGISTER
-# =========================
 
 @app.route("/register", methods=["POST"])
 def register():
-
     username = request.form.get("username")
     password = request.form.get("password")
 
     if not username or not password:
-        return "Username va parolni kiriting!"
+        return "Username va password kiriting."
 
-    existing_user = User.query.filter_by(
-        username=username
-    ).first()
+    existing_user = User.query.filter_by(username=username).first()
 
     if existing_user:
-        return """
-        <h2>Bu username allaqachon mavjud! ❌</h2>
-        <a href="/register">Qaytish</a>
-        """
+        return "Bu username band. <a href='/'>Orqaga</a>"
 
-    hashed_password = generate_password_hash(password)
-
-    yangi_user = User(
+    new_user = User(
         username=username,
-        password=hashed_password
+        password=generate_password_hash(password)
     )
 
-    db.session.add(yangi_user)
+    db.session.add(new_user)
     db.session.commit()
 
-    return """
-    <h2>Ro'yxatdan o'tish muvaffaqiyatli! ✅</h2>
+    return "Register muvaffaqiyatli! <a href='/'>Login qilish</a>"
 
-    <a href="/">
-        Login qilish
-    </a>
-    """
-
-
-# =========================
-# LOGIN
-# =========================
 
 @app.route("/login", methods=["POST"])
 def login():
-
     username = request.form.get("username")
     password = request.form.get("password")
 
-    user = User.query.filter_by(
-        username=username
-    ).first()
-[9/18/2026 3:55 PM] Nizomov: if not user:
-        return """
-        <h2>Username yoki parol noto'g'ri! ❌</h2>
-        <a href="/">Qaytish</a>
-        """
+    user = User.query.filter_by(username=username).first()
 
-    if not check_password_hash(user.password, password):
-        return """
-        <h2>Username yoki parol noto'g'ri! ❌</h2>
-        <a href="/">Qaytish</a>
-        """
+    if user and check_password_hash(user.password, password):
+        session["username"] = user.username
+        return home()
 
-    session["username"] = user.username
-
-    return home()
+    return "Username yoki password noto‘g‘ri. <a href='/'>Orqaga</a>"
 
 
-# =========================
-# SEND MESSAGE
-# =========================
-
-@app.route("/send", methods=["POST"])
-def send():
-
+@app.route("/chat/<receiver>")
+def chat(receiver):
     username = session.get("username")
-    message = request.form.get("message")
 
     if not username:
-        return """
-        <h2>Avval login qiling! 🔐</h2>
-        <a href="/">Login</a>
+        return "Avval login qiling. <a href='/'>Login</a>"
+
+    user = User.query.filter_by(username=receiver).first()
+
+    if not user:
+        return "Bunday foydalanuvchi topilmadi."
+
+    messages = Message.query.filter(
+        ((Message.sender == username) & (Message.receiver == receiver)) |
+        ((Message.sender == receiver) & (Message.receiver == username))
+    ).all()
+
+    messages_html = ""
+
+    for message in messages:
+        messages_html += f"""
+        <p>
+            <b>{message.sender}:</b> {message.text}
+        </p>
         """
 
-    if message:
+    return f"""
+    <h1>💬 {receiver} bilan chat</h1>
 
-        yangi_xabar = Message(
-            username=username,
-            text=message
+    <a href="/">⬅️ Foydalanuvchilar</a>
+
+    <hr>
+
+    {messages_html}
+
+    <form action="/send/{receiver}" method="post">
+        <input name="message" placeholder="Xabar yozin
+[9/18/2026 4:33 PM] Nizomov: g" required>
+        <button type="submit">Yuborish</button>
+    </form>
+    """
+
+
+@app.route("/send/<receiver>", methods=["POST"])
+def send(receiver):
+    username = session.get("username")
+    message_text = request.form.get("message")
+
+    if not username:
+        return "Avval login qiling."
+
+    if message_text:
+        message = Message(
+            sender=username,
+            receiver=receiver,
+            text=message_text
         )
 
-        db.session.add(yangi_xabar)
+        db.session.add(message)
         db.session.commit()
 
-    return home()
+    return chat(receiver)
 
-
-# =========================
-# LOGOUT
-# =========================
 
 @app.route("/logout", methods=["POST"])
 def logout():
-
     session.pop("username", None)
-
     return home()
 
 
-# =========================
-# START APP
-# =========================
-
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000
-    )
+    app.run(host="0.0.0.0", port=5000)
