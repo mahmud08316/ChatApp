@@ -11,10 +11,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
-# =========================
-# DATABASE MODELS
-# =========================
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -31,10 +27,6 @@ class Message(db.Model):
 with app.app_context():
     db.create_all()
 
-
-# =========================
-# STYLE
-# =========================
 
 STYLE = """
 <style>
@@ -139,10 +131,6 @@ button:hover {
 """
 
 
-# =========================
-# HOME
-# =========================
-
 @app.route("/")
 def home():
     username = session.get("username")
@@ -156,18 +144,14 @@ def home():
                 <h2>Kirish</h2>
 
                 <form action="/login" method="post">
-                    <input
-                        name="username"
-                        placeholder="Username"
-                        required
-                    >
+                    <input name="username"
+                           placeholder="Username"
+                           required>
 
-                    <input
-                        name="password"
-                        type="password"
-                        placeholder="Password"
-                        required
-                    >
+                    <input name="password"
+                           type="password"
+                           placeholder="Password"
+                           required>
 
                     <button type="submit">
                         Kirish
@@ -179,18 +163,14 @@ def home():
                 <h2>Ro‘yxatdan o‘tish</h2>
 
                 <form action="/register" method="post">
-                    <input
-                        name="username"
-                        placeholder="Username"
-                        required
-                    >
+                    <input name="username"
+                           placeholder="Username"
+                           required>
 
-                    <input
-                        name="password"
-                        type="password"
-                        placeholder="Password"
-                        required
-                    >
+                    <input name="password"
+                           type="password"
+                           placeholder="Password"
+                           required>
 
                     <button type="submit">
                         Register
@@ -199,7 +179,8 @@ def home():
             </div>
         </div>
         """
-users = User.query.filter(
+
+    users = User.query.filter(
         User.username != username
     ).all()
 
@@ -209,16 +190,13 @@ users = User.query.filter(
         users_html += f"""
         <div class="user">
             <span>👤 <b>{user.username}</b></span>
-
             <a href="/chat/{user.username}">
                 Chat
             </a>
         </div>
         """
-
-    return STYLE + f"""
+return STYLE + f"""
     <div class="container">
-
         <div class="header">
             💬 ChatApp
         </div>
@@ -243,10 +221,6 @@ users = User.query.filter(
     """
 
 
-# =========================
-# REGISTER
-# =========================
-
 @app.route("/register", methods=["POST"])
 def register():
     username = request.form.get("username")
@@ -261,8 +235,8 @@ def register():
 
     if existing_user:
         return """
-        <h2>❌ Bu username band.</h2>
-        <br>
+        Bu username band.
+        <br><br>
         <a href="/">Orqaga</a>
         """
 
@@ -279,10 +253,6 @@ def register():
     <a href="/">Login qilish</a>
     """
 
-
-# =========================
-# LOGIN
-# =========================
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -306,10 +276,6 @@ def login():
     """
 
 
-# =========================
-# CHAT
-# =========================
-
 @app.route("/chat/<receiver>")
 def chat(receiver):
     username = session.get("username")
@@ -328,8 +294,7 @@ def chat(receiver):
         (
             (Message.sender == username) &
             (Message.receiver == receiver)
-        )
-        |
+        ) |
         (
             (Message.sender == receiver) &
             (Message.receiver == username)
@@ -392,10 +357,7 @@ def chat(receiver):
     """
 
 
-# =========================
-# SEND MESSAGE
-# =========================
-[9/19/2026 2:58 PM] Nizomov: @app.route("/send/<receiver>", methods=["POST"])
+@app.route("/send/<receiver>", methods=["POST"])
 def send(receiver):
     username = session.get("username")
 
@@ -417,24 +379,14 @@ def send(receiver):
     return redirect(f"/chat/{receiver}")
 
 
-# =========================
-# LOGOUT
-# =========================
-
 @app.route("/logout", methods=["POST"])
 def logout():
     session.pop("username", None)
     return redirect("/")
 
 
-# =========================
-# RUN APP
-# =========================
-
-if name == "main":
+if __name__ == "main":
     app.run(
         host="0.0.0.0",
-        port=5000,
-        debug=True
+        port=5000
     )
-
