@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask("ChatApp")
+
 app.secret_key = "chatapp-secret-key"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///chat.db"
@@ -10,8 +11,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-
-# DATABASE
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -30,107 +29,68 @@ with app.app_context():
     db.create_all()
 
 
-# STYLE
-
 STYLE = """
 <style>
-* {
-    box-sizing: border-box;
-}
-
 body {
-    margin: 0;
     font-family: Arial, sans-serif;
-    background: #e9f1f7;
-    color: #222;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 20px;
 }
 
 .container {
-    max-width: 500px;
-    margin: 40px auto;
+    max-width: 600px;
+    margin: auto;
     background: white;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-}
-
-.header {
-    background: #229ed9;
-    color: white;
     padding: 20px;
-    font-size: 23px;
-    font-weight: bold;
-}
-
-.content {
-    padding: 20px;
+    border-radius: 15px;
 }
 
 input {
-    width: 100%;
-    padding: 13px;
-    margin: 7px 0;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    font-size: 15px;
+    width: 90%;
+    padding: 12px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
 }
 
 button {
-    width: 100%;
-    padding: 13px;
-    margin-top: 8px;
+    padding: 10px 20px;
     border: none;
-    border-radius: 10px;
-    background: #229ed9;
+    border-radius: 8px;
+    background: #007bff;
     color: white;
-    font-size: 16px;
     cursor: pointer;
 }
 
 button:hover {
-    background: #168ac0;
+    background: #0056b3;
 }
 
 .user {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 13px;
-    margin: 8px 0;
-    background: #f1f5f8;
-    border-radius: 12px;
-}
-
-.user a {
+    display: block;
+    padding: 15px;
+    margin: 10px 0;
+    background: #eeeeee;
+    border-radius: 10px;
     text-decoration: none;
-    color: white;
-    background: #229ed9;
-    padding: 8px 13px;
-    border-radius: 9px;
+    color: black;
 }
 
 .message {
-    padding: 10px 13px;
+    background: #eeeeee;
+    padding: 10px;
     margin: 8px 0;
-    border-radius: 12px;
-    background: #f1f5f8;
+    border-radius: 10px;
 }
 
 .me {
-    background: #d8f4ff;
+    background: #cce5ff;
     text-align: right;
-}
-
-.small {
-    text-align: center;
-    color: #777;
-    margin-top: 15px;
 }
 </style>
 """
 
-
-# HOME
 
 @app.route("/")
 def home():
@@ -139,102 +99,59 @@ def home():
     if not username:
         return STYLE + """
         <div class="container">
-            <div class="header">
-                💬 ChatApp
-            </div>
+            <h1>💬 ChatApp</h1>
 
-            <div class="content">
-                <h2>Kirish</h2>
+            <h2>Login</h2>
 
-                <form action="/login" method="post">
-                    <input
-                        name="username"
-                        placeholder="Username"
-                        required
-                    >
+            <form method="POST" action="/login">
+                <input name="username" placeholder="Username" required>
+                <br>
+                <input name="password" type="password" placeholder="Password" required>
+                <br>
+                <button type="submit">Login</button>
+            </form>
 
-                    <input
-                        name="password"
-                        type="password"
-                        placeholder="Password"
-                        required
-                    >
+            <hr>
 
-                    <button type="submit">
-                        Kirish
-                    </button>
-                </form>
+            <h2>Register</h2>
 
-                <hr>
-
-                <h2>Ro‘yxatdan o‘tish</h2>
-
-                <form action="/register" method="post">
-                    <input
-                        name="username"
-                        placeholder="Username"
-                        required
-                    >
-
-                    <input
-                        name="password"
-                        type="password"
-                        placeholder="Password"
-                        required
-                    >
-
-                    <button type="submit">
-                        Register
-                    </button>
-                </form>
-            </div>
+            <form method="POST" action="/register">
+                <input name="username" placeholder="Username" required>
+                <br>
+                <input name="password" type="password" placeholder="Password" required>
+                <br>
+                <button type="submit">Register</button>
+            </form>
         </div>
         """
 
-    users = User.query.filter(
-        User.username != username
-    ).all()
+    users = User.query.filter(User.username != username).all()
 
     users_html = ""
 
     for user in users:
         users_html += f"""
-        <div class="user">
-            <span>👤 <b>{user.username}</b></span>
-                     <a href="/chat/{user.username}">
-                Chat
-            </a>
-        </div>
+        <a class="user" href="/chat/{user.username}">
+            👤 {user.username}
+        </a>
         """
 
     return STYLE + f"""
     <div class="container">
+        <h1>💬 ChatApp</h1>
 
-        <div class="header">
-            💬 ChatApp
-        </div>
+        <h3>Salom, {username}! 👋</h3>
 
-        <div class="content">
+        <form method="POST" action="/logout">
+            <button type="submit">Logout</button>
+        </form>
 
-            <h3>Salom, {username}! 👋</h3>
+        <h2>Users</h2>
 
-            <h2>Foydalanuvchilar 👥</h2>
-
-            {users_html if users_html else
-            "<p>Hozircha boshqa foydalanuvchi yo‘q.</p>"}
-
-            <form action="/logout" method="post">
-                <button type="submit">
-                    Chiqish
-                </button>
-            </form>
-
-        </div>
+        {users_html}
     </div>
     """
 
-
-# REGISTER
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -244,9 +161,7 @@ def register():
     if not username or not password:
         return "Ma'lumotlarni to‘liq kiriting."
 
-    existing_user = User.query.filter_by(
-        username=username
-    ).first()
+    existing_user = User.query.filter_by(username=username).first()
 
     if existing_user:
         return """
@@ -268,21 +183,13 @@ def register():
     """
 
 
-# LOGIN
-
 @app.route("/login", methods=["POST"])
 def login():
     username = request.form.get("username")
     password = request.form.get("password")
+[9/19/2026 3:40 PM] Nizomov: user = User.query.filter_by(username=username).first()
 
-    user = User.query.filter_by(
-        username=username
-    ).first()
-
-    if user and check_password_hash(
-        user.password,
-        password
-    ):
+    if user and check_password_hash(user.password, password):
         session["username"] = user.username
         return redirect("/")
 
@@ -292,8 +199,6 @@ def login():
     """
 
 
-# CHAT
-
 @app.route("/chat/<receiver>")
 def chat(receiver):
     username = session.get("username")
@@ -301,9 +206,7 @@ def chat(receiver):
     if not username:
         return redirect("/")
 
-    user = User.query.filter_by(
-        username=receiver
-    ).first()
+    user = User.query.filter_by(username=receiver).first()
 
     if not user:
         return "Foydalanuvchi topilmadi."
@@ -323,7 +226,6 @@ def chat(receiver):
     messages_html = ""
 
     for message in messages:
-
         if message.sender == username:
             messages_html += f"""
             <div class="message me">
@@ -342,41 +244,22 @@ def chat(receiver):
     return STYLE + f"""
     <div class="container">
 
-        <div class="header">
-            💬 {receiver}
-        </div>
+        <h2>💬 Chat: {receiver}</h2>
 
-        <div class="content">
+        {messages_html}
 
-            <p>
-                <a href="/">⬅️ Orqaga</a>
-            </p>
+        <form method="POST" action="/send/{receiver}">
+            <input name="message" placeholder="Xabar yozing..." required>
+            <button type="submit">Send</button>
+        </form>
 
-            <hr>
+        <br>
 
-            {messages_html if messages_html else
-            "<p class='small'>Hali xabar yo‘q.</p>"}
+        <a href="/">⬅ Orqaga</a>
 
-            <form action="/send/{receiver}" method="post">
-
-                <input
-                    name="message"
-                    placeholder="Xabar yozing..."
-                    required
-                >
-
-                <button type="submit">
-                    Yuborish ➤
-                </button>
-
-            </form>
-
-        </div>
     </div>
     """
 
-
-# SEND MESSAGE
 
 @app.route("/send/<receiver>", methods=["POST"])
 def send(receiver):
@@ -400,18 +283,15 @@ def send(receiver):
     return redirect(f"/chat/{receiver}")
 
 
-# LOGOUT
-        @app.route("/logout", methods=["POST"])
+@app.route("/logout", methods=["POST"])
 def logout():
     session.pop("username", None)
     return redirect("/")
 
 
-# RUN
-
-if __name__ == "__main__":
+if name == "main":
     app.run(
         host="0.0.0.0",
         port=5000,
-        debug=True
+        debug=False
     )
