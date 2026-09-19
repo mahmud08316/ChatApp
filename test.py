@@ -11,6 +11,8 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
+# DATABASE
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -27,6 +29,8 @@ class Message(db.Model):
 with app.app_context():
     db.create_all()
 
+
+# STYLE
 
 STYLE = """
 <style>
@@ -122,14 +126,11 @@ button:hover {
     color: #777;
     margin-top: 15px;
 }
-
-.small a {
-    color: #229ed9;
-    text-decoration: none;
-}
 </style>
 """
 
+
+# HOME
 
 @app.route("/")
 def home():
@@ -138,20 +139,26 @@ def home():
     if not username:
         return STYLE + """
         <div class="container">
-            <div class="header">💬 ChatApp</div>
+            <div class="header">
+                💬 ChatApp
+            </div>
 
             <div class="content">
                 <h2>Kirish</h2>
 
                 <form action="/login" method="post">
-                    <input name="username"
-                           placeholder="Username"
-                           required>
+                    <input
+                        name="username"
+                        placeholder="Username"
+                        required
+                    >
 
-                    <input name="password"
-                           type="password"
-                           placeholder="Password"
-                           required>
+                    <input
+                        name="password"
+                        type="password"
+                        placeholder="Password"
+                        required
+                    >
 
                     <button type="submit">
                         Kirish
@@ -163,14 +170,18 @@ def home():
                 <h2>Ro‘yxatdan o‘tish</h2>
 
                 <form action="/register" method="post">
-                    <input name="username"
-                           placeholder="Username"
-                           required>
+                    <input
+                        name="username"
+                        placeholder="Username"
+                        required
+                    >
 
-                    <input name="password"
-                           type="password"
-                           placeholder="Password"
-                           required>
+                    <input
+                        name="password"
+                        type="password"
+                        placeholder="Password"
+                        required
+                    >
 
                     <button type="submit">
                         Register
@@ -190,13 +201,15 @@ def home():
         users_html += f"""
         <div class="user">
             <span>👤 <b>{user.username}</b></span>
-            <a href="/chat/{user.username}">
+                     <a href="/chat/{user.username}">
                 Chat
             </a>
         </div>
         """
-return STYLE + f"""
+
+    return STYLE + f"""
     <div class="container">
+
         <div class="header">
             💬 ChatApp
         </div>
@@ -221,6 +234,8 @@ return STYLE + f"""
     """
 
 
+# REGISTER
+
 @app.route("/register", methods=["POST"])
 def register():
     username = request.form.get("username")
@@ -235,8 +250,7 @@ def register():
 
     if existing_user:
         return """
-        Bu username band.
-        <br><br>
+        <h2>❌ Bu username band.</h2>
         <a href="/">Orqaga</a>
         """
 
@@ -253,6 +267,8 @@ def register():
     <a href="/">Login qilish</a>
     """
 
+
+# LOGIN
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -276,6 +292,8 @@ def login():
     """
 
 
+# CHAT
+
 @app.route("/chat/<receiver>")
 def chat(receiver):
     username = session.get("username")
@@ -294,7 +312,8 @@ def chat(receiver):
         (
             (Message.sender == username) &
             (Message.receiver == receiver)
-        ) |
+        )
+        |
         (
             (Message.sender == receiver) &
             (Message.receiver == username)
@@ -357,6 +376,8 @@ def chat(receiver):
     """
 
 
+# SEND MESSAGE
+
 @app.route("/send/<receiver>", methods=["POST"])
 def send(receiver):
     username = session.get("username")
@@ -379,14 +400,18 @@ def send(receiver):
     return redirect(f"/chat/{receiver}")
 
 
-@app.route("/logout", methods=["POST"])
+# LOGOUT
+        @app.route("/logout", methods=["POST"])
 def logout():
     session.pop("username", None)
     return redirect("/")
 
 
-if __name__ == "main":
+# RUN
+
+if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
-        port=5000
+        port=5000,
+        debug=True
     )
